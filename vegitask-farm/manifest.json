@@ -1,0 +1,17 @@
+{
+  "name": "ベジタスクファーム",
+  "short_name": "ベジタスク",
+  "description": "タスクをこなして野菜を育てるゲーム",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0fdf4",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

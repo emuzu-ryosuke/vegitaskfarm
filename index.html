@@ -2,16 +2,18 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- 👇ここから追加（スマホ用・PWA用の設定） -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=0">
     <meta name="theme-color" content="#16a34a">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <!-- 👆ここまで追加 -->
     <title>ベジタスクファーム</title>
     <style>
         /* 全体・共通 */
         body { font-family: sans-serif; background-color: #f0fdf4; color: #166534; padding: 20px; text-align: center; }
+        
+        /* 🌟 背景スクロールロック（モーダル表示時用） */
+        body.no-scroll { overflow: hidden; }
+
         .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
         h1 { font-size: 22px; margin-bottom: 20px; margin-top: 10px; cursor: default; user-select: none; color: #0d9488; }
         ul { list-style: none; padding: 0; margin: 0; }
@@ -268,18 +270,56 @@
         .aichef-selected-slot.filled:hover { background: #fee2e2; border-color: #ef4444; }
         .aichef-selected-slot.filled:hover::after { content: "🗑️"; position: absolute; font-size: 16px; background: rgba(255,255,255,0.8); border-radius: 50%; padding: 2px; }
 
+        /* --- スマートフォン用（レスポンシブ） --- */
+        @media (max-width: 480px) {
+            body { padding: 10px 5px; }
+            .container { padding: 15px 10px; border-radius: 10px; }
+            h1 { font-size: 18px; margin-bottom: 15px; }
+            .top-settings-btn { right: 10px; top: 10px; width: 30px; height: 30px; font-size: 14px; }
+            
+            .top-btn-row { flex-wrap: wrap; gap: 4px; margin-bottom: 15px; }
+            .open-modal-btn { min-width: 45%; padding: 10px 2px; font-size: 11px; }
+
+            .nav-tabs button { font-size: 13px; padding: 8px; }
+
+            .veg-button-grid, .inventory-slot-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+            .veg-button-emoji { font-size: 20px; }
+            .veg-button-name { font-size: 9px; }
+
+            .calendar-day { font-size: 10px; min-height: 44px; padding: 2px 1px; }
+            .day-header { font-size: 10px; padding: 10px 0 2px 0; }
+            .task-form input { min-width: 100px; font-size: 12px; }
+            .task-form select { width: 85px; font-size: 12px; }
+            .task-form button { padding: 0 10px; font-size: 12px; }
+            .task-item-text { font-size: 11px; }
+            .done-btn, .task-del-btn { font-size: 10px; padding: 4px 6px; }
+
+            .modal-content { padding: 15px 10px; border-radius: 10px; }
+            .modal-tabs button { font-size: 11px; padding: 6px; }
+
+            .cook-action-emoji { font-size: 20px; }
+            .cook-action-name { font-size: 12px; }
+            .cook-action-item { padding: 10px 8px; gap: 5px; }
+            .cook-btn { font-size: 11px; padding: 6px 10px; }
+
+            .repeat-input-row button { font-size: 10px; min-width: 30%; height: 32px; padding: 0 2px; }
+            
+            .cookpad-main-emoji { font-size: 28px; }
+            .cookpad-main-name { font-size: 15px; }
+            .cookpad-header-right { font-size: 11px; padding: 4px 8px; }
+            .cookpad-ingredient-row { font-size: 12px; }
+            .cookpad-step-text { font-size: 11px; }
+        }
+
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 設定ボタンを右上に配置 -->
     <button class="top-settings-btn" onclick="openSettingsModal()" title="ゲーム設定">⚙️</button>
     
-    <!-- 隠しコマンド発動用にIDとイベントを追加 -->
     <h1 id="game-title" onclick="handleTitleClick()">ベジタスクファーム</h1>
 
-    <!-- トップボタン列 -->
     <div class="top-btn-row">
         <button id="top-btn-tutorial" class="open-modal-btn btn-teal" onclick="clickTutorialButton()">🔰 あそびかた</button>
         <button id="top-btn-calendar" class="open-modal-btn btn-blue" onclick="openModal('calendar')">📅 スケジュール</button>
@@ -292,13 +332,11 @@
         <button id="tab-kitchen" onclick="switchPage('kitchen')">🍳 調理場</button>
     </div>
 
-    <!-- 解放条件エリア -->
     <div class="unlock-hint-area" id="unlock-hint-area" style="display: none;">
         <h4>💡 次の目標（解放条件）</h4>
         <ul class="unlock-hint-list" id="unlock-hint-list"></ul>
     </div>
 
-    <!-- 農園ページ -->
     <div id="page-farm" class="page active">
         <div class="farm-area" style="margin-top: 15px;">
             <div id="farm-slot">🟫</div>
@@ -307,15 +345,12 @@
         </div>
     </div>
 
-    <!-- 調理場ページ -->
     <div id="page-kitchen" class="page">
         <div class="kitchen-area" style="margin-top: 15px;">
-            <!-- AIシェフ機能の起動ボタン -->
             <button id="btn-open-aichef" class="plant-trigger-btn disabled-lock" style="width: 100%; margin-bottom: 20px; font-size: 14px;" onclick="openAiChefModal()" disabled>🔒 AIシェフ (全種解放でオープン)</button>
             
             <h3>🍳 今日は何を作る？</h3>
             <div class="cook-action-list">
-                <!-- チュートリアル用の冷やしトマトボックス -->
                 <div id="tutorial-cook-box" class="cook-action-item tutorial-cook-box-style" style="display: none;">
                     <div class="cook-action-info">
                         <span class="cook-action-emoji">🥗</span>
@@ -326,13 +361,11 @@
                     </div>
                     <button id="cook-tutorial-item" class="cook-btn btn-blue-dark" style="width: auto;" onclick="cook('tutorial_salad')">調理する</button>
                 </div>
-                <!-- 通常レシピ・オリジナルレシピ表示エリア -->
                 <div id="dynamic-cook-list" style="display: contents;"></div>
             </div>
         </div>
     </div>
 
-    <!-- タスクエリア -->
     <div class="task-area">
         <h4>📅 <span id="current-month-label"></span>月<span id="selected-date-label">1</span>日のタスク</h4>
         <div class="task-form">
@@ -368,9 +401,6 @@
         </div>
     </div>
 
-    <!-- モーダル群 -->
-
-    <!-- 全般設定（ラベル名変更）モーダル -->
     <div id="modal-settings" class="modal-overlay" style="z-index: 150;">
         <div class="modal-content" style="max-width: 350px; padding: 20px;">
             <h3 style="margin-top: 0;">⚙️ ゲーム設定</h3>
@@ -404,7 +434,6 @@
         </div>
     </div>
 
-    <!-- カレンダーヘルプ（使い方の説明）モーダル -->
     <div id="modal-calendarHelp" class="modal-overlay" style="z-index: 150;">
         <div class="modal-content" style="max-width: 350px; text-align: left; padding: 20px;">
             <h3 style="margin-top: 0; text-align: center; color: #0d9488;">📅 スケジュール画面の使い方</h3>
@@ -430,7 +459,6 @@
         </div>
     </div>
 
-    <!-- カレンダー設定（⚙️）モーダル -->
     <div id="modal-calendarSettings" class="modal-overlay" style="z-index: 150;">
         <div class="modal-content" style="max-width: 320px; padding: 20px;">
             <h3 style="color: #475569; margin-top: 0;">⚙️ カレンダー専用設定</h3>
@@ -453,7 +481,6 @@
         </div>
     </div>
 
-    <!-- カレンダーモーダル -->
     <div id="modal-calendar" class="modal-overlay">
         <div class="modal-content">
             <div style="position: relative; margin-bottom: 15px;">
@@ -508,7 +535,6 @@
         </div>
     </div>
 
-    <!-- チュートリアルポップアップ -->
     <div id="modal-tutorial" class="modal-overlay">
         <div class="modal-content" style="border: 3px solid #0d9488;">
             <h3 style="margin-top:5px;">🔰 かんたんあそびかたガイド</h3>
@@ -523,7 +549,6 @@
         </div>
     </div>
 
-    <!-- 倉庫ポップアップウィンドウ -->
     <div id="modal-inventory" class="modal-overlay">
         <div class="modal-content">
             <h3 style="color:#166534;">📦 野菜倉庫</h3>
@@ -535,7 +560,6 @@
         </div>
     </div>
 
-    <!-- 野菜詳細（図鑑）ポップアップ -->
     <div id="modal-vegDetail" class="modal-overlay" style="z-index: 150;">
         <div class="modal-content" style="max-width: 300px; padding: 20px; border: 2px solid #cbd5e1;">
             <div id="veg-detail-emoji" style="font-size: 50px; margin-bottom: 10px;">🍅</div>
@@ -547,7 +571,6 @@
         </div>
     </div>
 
-    <!-- 種まきポップアップ -->
     <div id="modal-seedSelect" class="modal-overlay">
         <div class="modal-content">
             <h3 style="color:#166534;">🌱 植える種を選ぼう</h3>
@@ -556,7 +579,6 @@
         </div>
     </div>
 
-    <!-- 🌟 デバッグパネルは初期状態で非表示 -->
     <div id="debug-menu-panel" class="debug-section" style="display: none;">
         <div class="debug-title">🛠️ デバッグ機能</div>
         
@@ -582,7 +604,6 @@
         </div>
     </div>
 
-    <!-- デバッグ：野菜一括入荷 -->
     <div id="modal-debugStock" class="modal-overlay">
         <div class="modal-content">
             <h3 style="color:#166534;">🛠️ デバッグ：野菜一括入荷</h3>
@@ -599,7 +620,6 @@
         </div>
     </div>
 
-    <!-- AIシェフ用モーダル -->
     <div id="modal-aiChef" class="modal-overlay">
         <div class="modal-content" style="max-width: 400px;">
             <h3 style="color: #0d9488; margin-top: 5px;">👨‍🍳 AIシェフのレシピ開発室</h3>
@@ -634,7 +654,6 @@
         </div>
     </div>
 
-    <!-- AIシェフ結果モーダル -->
     <div id="modal-aiChefResult" class="modal-overlay" style="z-index: 150;">
         <div class="modal-content" style="max-width: 350px;">
             <h3 style="margin-top: 5px;">🎉 レシピが完成しました！</h3>
@@ -656,7 +675,6 @@
         </div>
     </div>
 
-    <!-- レシピブックモーダル -->
     <div id="modal-recipeBook" class="modal-overlay">
         <div class="modal-content">
             <div id="recipe-book-index-view">
@@ -684,7 +702,6 @@
                 <button onclick="closeModal('recipeBook')" class="modal-close-btn btn-soft-gray" style="margin-top:20px;">閉じる</button>
             </div>
 
-            <!-- 詳細画面 -->
             <div id="recipe-book-detail-view" style="display: none;">
                 <div class="cookpad-recipe-wrapper">
                     <div class="cookpad-title-header">
@@ -715,12 +732,12 @@
 </div>
 
 <script src="app.js"></script>
-<!-- 👇ここから追加（Service Workerの登録） -->
+
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
             navigator.serviceWorker.register('sw.js').then(function(registration) {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                console.log('ServiceWorker registration successful');
             }, function(err) {
                 console.log('ServiceWorker registration failed: ', err);
             });

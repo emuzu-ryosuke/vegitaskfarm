@@ -85,7 +85,7 @@ let hasSeenCalendarHelp = false;
 let recipeBookCurrentPage = 1;
 const recipeBookItemsPerPage = 6; 
 
-// 🌟 ゲーム設定（週始まりのみに変更）
+// ゲーム設定（週始まりのみ）
 let gameSettings = { weekStart: 0 };
 
 const realClock = new Date(); const currentYear = realClock.getFullYear(), currentMonth = realClock.getMonth() + 1, realTodayDate = realClock.getDate();
@@ -132,17 +132,53 @@ function renderLabelSelects() {
     if ($('repeatLabelSelect')) $('repeatLabelSelect').innerHTML = html;
 }
 
-function openSettingsModal() {
-    if (currentTutorialStep > 0) return;
+// 🌟 モーダルを開くときの共通処理
+function openModal(id) {
+    if (currentTutorialStep > 0 && id !== 'tutorial' && id !== 'seedSelect') { alert('あそびかたガイド進行中です！ガイドの指示に従ってね。'); return; }
+    $(`modal-${id}`).classList.add('active');
     
-    let weekStartRadio = document.querySelector(`input[name="weekStartSetting"][value="${gameSettings.weekStart || 0}"]`);
-    if(weekStartRadio) weekStartRadio.checked = true;
+    // 🌟 背景スクロールをロック
+    document.body.classList.add('no-scroll');
     
-    for (let key in labelNames) {
-        if ($(`input-label-${key}`)) $(`input-label-${key}`).value = labelNames[key];
+    if (id === 'settings') {
+        let weekStartRadio = document.querySelector(`input[name="weekStartSetting"][value="${gameSettings.weekStart || 0}"]`);
+        if(weekStartRadio) weekStartRadio.checked = true;
+        for (let key in labelNames) {
+            if ($(`input-label-${key}`)) $(`input-label-${key}`).value = labelNames[key];
+        }
     }
-    openModal('settings');
+    if (id === 'calendar') { 
+        if(typeof cancelHolidayPickingMode === 'function') cancelHolidayPickingMode(); 
+        if ($('modal-selected-day-label')) $('modal-selected-day-label').innerText = selectedDate;
+        if($('modal-repeat-form-panel')) $('modal-repeat-form-panel').style.display = 'none';
+        renderCalendar(); renderModalTaskList(); 
+        
+        if (!hasSeenCalendarHelp) {
+            hasSeenCalendarHelp = true;
+            saveData();
+            setTimeout(() => { openModal('calendarHelp'); }, 200);
+        }
+    }
+    if (id === 'recipeBook') { 
+        recipeBookCurrentPage = 1; 
+        switchBookTab('main'); closeRecipeDetailView(); updateRecipeBookDisplay(); 
+    }
+    if (id === 'seedSelect') renderSeedSelectMenu();
+    if (id === 'debugStock') renderDebugStockMenu();
+    if (id === 'inventory') renderInventoryModalGrid(); 
 }
+
+// 🌟 モーダルを閉じるときの共通処理
+function closeModal(id) { 
+    $(`modal-${id}`).classList.remove('active'); 
+    
+    // 🌟 他に開いているモーダルがなければスクロールロック解除
+    if (document.querySelectorAll('.modal-overlay.active').length === 0) {
+        document.body.classList.remove('no-scroll');
+    }
+}
+
+function openSettingsModal() { openModal('settings'); }
 
 function saveSettings() {
     let weekStartRadio = document.querySelector('input[name="weekStartSetting"]:checked');
@@ -162,7 +198,7 @@ function saveSettings() {
     closeModal('settings');
 }
 
-// 🌟 タイトル連続タップによるデバッグモード切り替え
+// タイトル連続タップによるデバッグモード切り替え
 let titleClickCount = 0;
 let titleClickTimer = null;
 function handleTitleClick() {
@@ -262,34 +298,6 @@ function checkUnlocks() {
     
     if (updated) { updateFarmDisplay(); if ($('modal-seedSelect').classList.contains('active')) renderSeedSelectMenu(); if ($('modal-recipeBook').classList.contains('active')) updateRecipeBookDisplay(); saveData(); }
 }
-
-function openModal(id) {
-    if (currentTutorialStep > 0 && id !== 'tutorial' && id !== 'seedSelect') { alert('あそびかたガイド進行中です！ガイドの指示に従ってね。'); return; }
-    $(`modal-${id}`).classList.add('active');
-    
-    if (id === 'calendar') { 
-        if(typeof cancelHolidayPickingMode === 'function') cancelHolidayPickingMode(); 
-        if ($('modal-selected-day-label')) $('modal-selected-day-label').innerText = selectedDate;
-        if($('modal-repeat-form-panel')) $('modal-repeat-form-panel').style.display = 'none';
-        renderCalendar(); renderModalTaskList(); 
-        
-        if (!hasSeenCalendarHelp) {
-            hasSeenCalendarHelp = true;
-            saveData();
-            setTimeout(() => { openModal('calendarHelp'); }, 200);
-        }
-    }
-    
-    if (id === 'recipeBook') { 
-        recipeBookCurrentPage = 1; 
-        switchBookTab('main'); closeRecipeDetailView(); updateRecipeBookDisplay(); 
-    }
-    if (id === 'seedSelect') renderSeedSelectMenu();
-    if (id === 'debugStock') renderDebugStockMenu();
-    if (id === 'inventory') renderInventoryModalGrid(); 
-}
-
-function closeModal(id) { $(`modal-${id}`).classList.remove('active'); }
 
 function switchPage(pageType) {
     if (currentTutorialStep > 0 && currentTutorialStep !== 4 && pageType === 'kitchen') { alert('ガイド：まだ調理場へ移るタイミングではありません！'); return; }
@@ -497,7 +505,7 @@ function updateFarmDisplay() {
                             <span class="cook-action-req">(${reqTexts.join(', ')})</span>
                         </div>
                     </div>
-                    <button class="cook-btn" style="background-color:#0d9488; width: auto;" onclick="cookOriginal('${recipe.id}')" ${canCook ? '' : 'disabled'}>調理する</button>
+                    <button class="cook-btn btn-teal-dark" style="width: auto;" onclick="cookOriginal('${recipe.id}')" ${canCook ? '' : 'disabled'}>調理する</button>
                 `;
                 cookListContainer.appendChild(div);
             });
